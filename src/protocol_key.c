@@ -98,7 +98,9 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 	UNUSED(type);
 	to->sptps.send_data = send_sptps_data_myself;
 	char buf[len * 4 / 3 + 5];
-	b64encode(data, buf, len);
+	memset(buf, 0x00, sizeof(buf));
+	if (!b64encode(data, buf, len))
+		logger(DEBUG_ALWAYS, LOG_ERR, "Can not b64encode data in %s", __FUNCTION__);
 	return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, myself->name, to->name, REQ_KEY, buf);
 }
 
