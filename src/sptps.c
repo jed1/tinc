@@ -296,6 +296,8 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 	// Concatenate both KEX messages, plus tag indicating if it is from the connection originator
 	char msg[(1 + 32 + keylen) * 2 + 1 + s->labellen];
 
+	memset(msg, 0x0, sizeof(msg));
+
 	msg[0] = !s->initiator;
 	memcpy(msg + 1, s->hiskex, 1 + 32 + keylen);
 	memcpy(msg + 1 + 33 + keylen, s->mykex, 1 + 32 + keylen);
@@ -306,7 +308,7 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 		return error(s, EIO, "Failed to verify SIG record");
 
 	// Compute shared secret.
-	char shared[ECDH_SHARED_SIZE];
+	char shared[ECDH_SHARED_SIZE] = { 0 };
 	if(!ecdh_compute_shared(s->ecdh, s->hiskex + 1 + 32, shared))
 		return error(s, EINVAL, "Failed to compute ECDH shared secret");
 
