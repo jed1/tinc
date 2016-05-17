@@ -384,7 +384,7 @@ int setup_slpd_in_socket() {
 			closesocket(nfd);
 			return -1;
 		}
-		logger(DEBUG_STATUS, LOG_INFO, "SLPD multicast group joined on %s ready (%d)", c_iface->value);
+		logger(DEBUG_STATUS, LOG_INFO, "SLPD multicast group joined on %s ready", c_iface->value);
 		c_iface = lookup_config_next(config_tree, c_iface);
 	}
 

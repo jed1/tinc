@@ -1533,7 +1533,7 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 	fng[86] = '\00';
 
 	if (mav == 0 && miv <= 2) {
-		logger(DEBUG_TRAFFIC, LOG_ERR, "Got SLPD packet node:%s port:%d %d.%d <%s> from %s (len: %d)", nodename, port, mav, miv, fng, addrstr, datalen);
+		logger(DEBUG_TRAFFIC, LOG_ERR, "Got SLPD packet node:%s port:%d %d.%d <%s> from %s", nodename, port, mav, miv, fng, addrstr);
 
 		node_t *n = lookup_node(nodename);
 		if (!n) {
