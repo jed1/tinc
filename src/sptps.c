@@ -482,6 +482,7 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 	}
 
 	char buffer[len];
+	memset(buffer, 0x0, len);
 	size_t outlen;
 	return chacha_poly1305_decrypt(s->incipher, seqno, data + 4, len - 4, buffer, &outlen);
 }
