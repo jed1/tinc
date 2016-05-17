@@ -375,7 +375,7 @@ void send_slpd_broadcast(char *iface) {
 
 	if ((sd = socket(mcast_addr->ai_family, mcast_addr->ai_socktype, 0)) < 0 ) {
 		logger(DEBUG_ALWAYS, LOG_INFO, "socket() error: [%s:%d]", strerror(errno), errno);
-		freeaddrinfo(&mcast_addr);
+		freeaddrinfo(mcast_addr);
 		return;
 	}
 
@@ -391,14 +391,14 @@ void send_slpd_broadcast(char *iface) {
 	ifindex = if_nametoindex(iface);
 	if(setsockopt (sd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)) != 0) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "setsockopt() IPV6_MULTICAST_IF failed [%s:%d]", strerror(errno), errno);
-		freeaddrinfo(&mcast_addr);
+		freeaddrinfo(mcast_addr);
 		return;
 	}
 
 	unsigned int reuse = 1;
 	if(setsockopt (sd, IPPROTO_IPV6, SO_REUSEADDR, (char*)&reuse, sizeof(reuse)) != 0) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "setsockopt() SO_REUSEADDR failed: [%s:%d]", strerror(errno), errno);
-		freeaddrinfo(&mcast_addr);
+		freeaddrinfo(mcast_addr);
 		return;
 	}
 
@@ -418,13 +418,18 @@ void send_slpd_broadcast(char *iface) {
 		return;
 	}
 	slpd_msg[MAXSIZE-1] = '\00';
-	ecdsa_sign(myself->connection->ecdsa, slpd_msg, strlen(slpd_msg), &signature);
-	if (b64encode(signature, &b64sig, 64) != 86) {
+
+	if (!ecdsa_sign(myself->connection->ecdsa, slpd_msg, strlen(slpd_msg), &signature)) {
+		logger(DEBUG_ALWAYS, LOG_ERR, "Can not sign payload for SLPD");
+		return;
+	}
+
+	if (b64encode(signature, b64sig, 64) != 86) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "b64encode() failed!");
 		return;
 	}
 
-	int l = snprintf(&pkt, strlen(slpd_msg) + strlen(b64sig) + 2, "%s %s", slpd_msg, b64sig);
+	int l = snprintf(pkt, strlen(slpd_msg) + strlen(b64sig) + 2, "%s %s", slpd_msg, b64sig);
 	pkt[l] = '\00';
 
 	if (sendto(sd, pkt, strlen(pkt), 0, mcast_addr->ai_addr, mcast_addr->ai_addrlen) != strlen(pkt) ) {

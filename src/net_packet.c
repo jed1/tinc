@@ -1544,9 +1544,7 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 			node_read_ecdsa_public_key(n);
 
 		char sig[64];
-		char b64sig[255];
 		memset(&sig, 0x0, 64);
-		memset(&b64sig, 0x0, 255);
 
 		if (miv >= 2) {
 			if (b64decode(fng, &sig, 86) != 64) {
@@ -1570,11 +1568,11 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 			char iface_name[255] = { 0 };
 			char fullhost[255] = { 0 };
 
-			if_indextoname(addr->sin6_scope_id, &iface_name);
+			if_indextoname(addr->sin6_scope_id, iface_name);
 
 			cfg = new_config();
 			cfg->variable = xstrdup("Address");
-			snprintf(&fullhost, 254, "%s%%%s", addrstr, iface_name);
+			snprintf(fullhost, 254, "%s%%%s", addrstr, iface_name);
 			cfg->value = xstrdup(fullhost);
 			cfg->file = NULL;
 			cfg->line = -1;
