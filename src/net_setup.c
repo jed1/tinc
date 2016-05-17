@@ -51,6 +51,7 @@
 char *myport;
 char *my_slpd_port;
 char *my_slpd_group;
+int my_slpd_expire;
 static char *myname;
 static io_t device_io;
 devops_t devops;
@@ -927,6 +928,12 @@ static bool setup_myself(void) {
 
 	if(!get_config_string(lookup_config(config_tree, "SLPDGroup"), &my_slpd_group))
 		my_slpd_group = xstrdup(DEFAULT_SLPD_GROUP);
+
+	char *tmp_expire;
+	if(!get_config_string(lookup_config(config_tree, "SLPDExpire"), &tmp_expire))
+		my_slpd_expire = DEFAULT_SLPD_EXPIRE;
+	else
+		my_slpd_expire = atoi(tmp_expire);
 
 	myself->connection->options = 0;
 	myself->connection->protocol_major = PROT_MAJOR;

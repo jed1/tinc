@@ -72,6 +72,7 @@ bool udp_discovery = true;
 int udp_discovery_keepalive_interval = 10;
 int udp_discovery_interval = 2;
 int udp_discovery_timeout = 30;
+extern int my_slpd_expire;
 
 #define MAX_SEQNO 1073741824
 
@@ -1540,6 +1541,16 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 			return;
 		}
 
+		if (n->slpd_address != NULL) {
+			if (now.tv_sec - n->slpd_active_since.tv_sec < my_slpd_expire) {
+				return;
+			}	else {
+				logger(DEBUG_ALWAYS, LOG_ERR, "Expire SLPD for %s", n->name);
+				free_config(n->slpd_address);
+				n->slpd_address = NULL;
+			}
+		}
+
 		if (!n->ecdsa)
 			node_read_ecdsa_public_key(n);
 
@@ -1564,6 +1575,7 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 		}
 
 		config_t *cfg = NULL;
+
 		if (!n->slpd_address) {
 			char iface_name[255] = { 0 };
 			char fullhost[255] = { 0 };
@@ -1572,13 +1584,14 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 
 			cfg = new_config();
 			cfg->variable = xstrdup("Address");
-			snprintf(fullhost, 254, "%s%%%s", addrstr, iface_name);
+			snprintf(fullhost, 254, "%s%%%s %d", addrstr, iface_name, port);
 			cfg->value = xstrdup(fullhost);
 			cfg->file = NULL;
 			cfg->line = -1;
 
 			logger(DEBUG_ALWAYS, LOG_ERR, "Discovered %s on %s", nodename , fullhost);
 			n->slpd_address = cfg;
+			n->slpd_active_since = now;
 			n->status.has_address = true;
 		}
 	} else {
