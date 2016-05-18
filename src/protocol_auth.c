@@ -747,7 +747,7 @@ static void send_everything(connection_t *c) {
 
 	for splay_each(node_t, n, node_tree) {
 			if ((!n->status.reachable) && ((now.tv_sec - n->last_state_change) >= keylifetime*2)) {
-				logger(DEBUG_CONNECTIONS, LOG_INFO, "Not forwarding informations about %s to %s (%ld / %d)", n->name,
+				logger(DEBUG_CONNECTIONS, LOG_INFO, "Not forwarding informations about %s to %s (%zu / %d)", n->name,
 							 c->name, now.tv_sec - n->last_state_change, keylifetime);
 				continue;
 			}
