@@ -123,12 +123,19 @@ bool send_pong(connection_t *c) {
 }
 
 bool pong_h(connection_t *c, const char *request) {
-	int current_rtt = 0;
-	int tv_sec, tv_usec, ret;
+	int ret;
+	long current_rtt = 0;
+	long tv_sec, tv_usec;
 	struct timeval _now;
+
+	if (!c->status.pinged) {
+		logger(DEBUG_ALWAYS, LOG_WARNING, "received pong without ping");
+		return false;
+	}
+
 	c->status.pinged = false;
 
-	ret = sscanf(request, "%*d %d %d", &tv_sec, &tv_usec);
+	ret = sscanf(request, "%*d %ld %ld", &tv_sec, &tv_usec);
 	gettimeofday(&_now, NULL);
 
 	if (ret != 2) {
@@ -137,12 +144,17 @@ bool pong_h(connection_t *c, const char *request) {
 		tv_usec = c->last_ping_time.tv_usec;
 	}
 
-	/* RTT should be in ms */
-	current_rtt = (_now.tv_sec - tv_sec)*1000;
-	/* Compute diff between usec */
-	current_rtt += _now.tv_usec >= tv_usec ? _now.tv_usec - tv_usec : tv_usec - _now.tv_usec;
+	if (_now.tv_sec - tv_sec > 2*pingtimeout) {
+		/* timeout_handler should close the meta connection after pingtimeout.
+		 * So if we still receive such pong, something is fishy. */
+		logger(DEBUG_ALWAYS, LOG_ERR, "bogus pong received from %s (%s)", c->name, c->hostname);
+		return false;
+	}
 
-	current_rtt = current_rtt/1000;
+	/* current_rtt should be in ms */
+	current_rtt += (_now.tv_sec - tv_sec) * 1000;
+	/* Compute diff between usec */
+	current_rtt += (_now.tv_usec - tv_usec) / 1000;
 
 	if (c->edge->avg_rtt == 0)
 		c->edge->avg_rtt = current_rtt;
