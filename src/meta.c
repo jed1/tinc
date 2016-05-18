@@ -198,6 +198,9 @@ bool receive_meta(connection_t *c) {
 		}
 
 		if(c->protocol_minor >= 2) {
+			if (!c->sptps.state)
+				logger(DEBUG_ALWAYS, LOG_ERR, "Metadata socket should support sptps but state is zero! %s (%s)", c->name, c->hostname);
+
 			int len = sptps_receive_data(&c->sptps, bufp, inlen);
 			if(!len)
 				return false;
