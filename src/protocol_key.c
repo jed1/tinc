@@ -445,7 +445,12 @@ bool ans_key_h(connection_t *c, const char *request) {
 
 	if(from->status.sptps) {
 		char buf[strlen(key)];
-		int len = b64decode(key, buf, strlen(key));
+		memset(buf, 0x00, sizeof(buf));
+		size_t len = b64decode(key, buf, strlen(key));
+
+		if (!from->sptps.state)
+			logger(DEBUG_ALWAYS, LOG_ERR, "We should support sptps but state is zero in ans_key_h! %s (%s)", c->name, c->hostname);
+
 		if(!len || !sptps_receive_data(&from->sptps, buf, len)) {
 			/* Uh-oh. It might be that the tunnel is stuck in some corrupted state,
 			   so let's restart SPTPS in case that helps. But don't do that too often
