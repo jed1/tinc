@@ -1545,7 +1545,7 @@ static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct s
 			if (now.tv_sec - n->slpd_active_since.tv_sec < my_slpd_expire) {
 				return;
 			}	else {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Expire SLPD for %s", n->name);
+				logger(DEBUG_STATUS, LOG_INFO, "Expire SLPD for %s", n->name);
 				free_config(n->slpd_address);
 				n->slpd_address = NULL;
 			}
