@@ -161,7 +161,7 @@ static void timeout_handler(void *data) {
 		 by default
 	*/
 	if (sleep_time > 2 * udp_discovery_timeout) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Awaking from dead after %ld seconds of sleep", sleep_time);
+		logger(DEBUG_ALWAYS, LOG_ERR, "Back from the dead after %ld seconds of sleep", sleep_time);
 		/*
 			Do not send any packets to tinc after we wake up.
 			The other node probably closed our connection but we still
