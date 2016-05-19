@@ -161,7 +161,7 @@ static void timeout_handler(void *data) {
 		 by default
 	*/
 	if (sleep_time > 2 * udp_discovery_timeout) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Awaiking from dead after %ld seconds of sleep", sleep_time);
+		logger(DEBUG_ALWAYS, LOG_ERR, "Awaking from dead after %ld seconds of sleep", sleep_time);
 		/*
 			Do not send any packets to tinc after we wake up.
 			The other node probably closed our connection but we still
@@ -322,7 +322,7 @@ static void periodic_handler(void *data) {
 			for list_each(outgoing_t, o, outgoing_list) {
 				bool found = false;
 				for list_each(connection_t, c, connection_list) {
-						if(c->outgoing == o) {
+					if(c->outgoing == o) {
 						found = true;
 						break;
 					}
