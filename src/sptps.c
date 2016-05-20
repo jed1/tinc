@@ -515,7 +515,9 @@ static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len
 	// Decrypt
 
 	char buffer[len];
+	memset(buffer, 0x00, len);
 	size_t outlen;
+	// CHECK: If this happens should we restart sptps?
 	if(!chacha_poly1305_decrypt(s->incipher, seqno, data, len, buffer, &outlen))
 		return error(s, EIO, "Failed to decrypt and verify packet");
 
