@@ -1397,8 +1397,10 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 			hard = true;
 		}
 
-		if(!try_mac(n, pkt))
+		if(!try_mac(n, pkt)) {
+			logger(DEBUG_ALWAYS, LOG_ERR, "try_mac(): for %s failed - previous log messages may be misleading", n->name);
 			continue;
+		}
 
 		match = n;
 		break;
