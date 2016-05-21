@@ -581,7 +581,7 @@ static void route_ipv4(node_t *source, vpn_packet_t *packet) {
 	}
 
 	if (subnet->multicast) {
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Ignore multicast from %s (%s) to %d.%d.%d.%d !", source->name, source->hostname,
+		logger(DEBUG_TRAFFIC, LOG_WARNING, "Ignore multicast from %s (%s) to %d.%d.%d.%d !", source->name, source->hostname,
 					 dest.x[0],
 					 dest.x[1],
 					 dest.x[2],
@@ -679,7 +679,7 @@ static void route_ipv6(node_t *source, vpn_packet_t *packet) {
 
 	if (subnet->multicast) {
 		// Prevent loops
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Ignore multicast from %s (%s) to IPv6 destination address %hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
+		logger(DEBUG_TRAFFIC, LOG_WARNING, "Ignore multicast from %s (%s) to IPv6 destination address %hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
 					 source->name, source->hostname,
 					 ntohs(dest.x[0]),
 					 ntohs(dest.x[1]),
@@ -696,7 +696,7 @@ static void route_ipv6(node_t *source, vpn_packet_t *packet) {
 	if (!subnet->owner) {
 		// Prevent loops
 		if (strictsubnets && !subnet_src) {
-			logger(DEBUG_ALWAYS, LOG_WARNING, "Ignore broadcast packet from %s (%s): unknown IPv6 source address %hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
+			logger(DEBUG_TRAFFIC, LOG_WARNING, "Ignore broadcast packet from %s (%s): unknown IPv6 source address %hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
 						 source->name, source->hostname,
 						 ntohs(src.x[0]),
 						 ntohs(src.x[1]),
