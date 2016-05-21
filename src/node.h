@@ -83,7 +83,7 @@ typedef struct node_t {
 
 	struct connection_t *connection;        /* Connection associated with this node (if a direct connection exists) */
 	struct config_t *slpd_address;          /* Address we learned via SLPD */
-	struct timeval slpd_active_since;          /* Last time a (gratuitous) UDP probe reply was sent */
+	struct timeval slpd_active_since;       /* Last time we accepted SLPD packet for this node */
 	uint32_t sent_seqno;                    /* Sequence number last sent to this node */
 	uint32_t received_seqno;                /* Sequence number last received from this node */
 	uint32_t received;                      /* Total valid packets received from this node */
