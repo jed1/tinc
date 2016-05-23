@@ -483,6 +483,16 @@ the interaction of replay tracking with underlying real packet loss and/or
 reordering. Setting this to zero will disable replay tracking completely and
 pass all traffic, but leaves tinc vulnerable to replay-based attacks on your
 traffic.
+.It Va SLPDInterface Li = Ar interface Pq none Bq multiple definition allwed
+When this option is set tinc will send and receive SLPD packets on this interface.
+.It Va SLPDInterval Li = Ar seconds Pq 0 disabled
+Define the interval in which  multicast SLPD packets will be sent.
+The Simple Local Peer Discovery will be activated when the interval is non zero.
+Depending on your profile interval between 30 and 120 seconds should be fine.
+.It Va SLPDGroup Li = Ar address Pq ff02::42:1
+Multicast group for your network. It should be unique for all networks.
+.It Va SLPDPort Li = Ar port Pq 1655
+Multicast port for your network. It should be unique in the combination with SLPDGroup.
 .It Va StrictSubnets Li = yes | no Po no Pc Bq experimental
 When this option is enabled tinc will only use Subnet statements which are
 present in the host config files in the local
