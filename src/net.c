@@ -187,7 +187,7 @@ static void timeout_handler(void *data) {
 		}
 
 		// Bail out early if we haven't reached the ping timeout for this node yet
-		if(c->last_ping_time + pingtimeout > now.tv_sec)
+		if(c->last_ping_time.tv_sec + pingtimeout > now.tv_sec)
 			continue;
 
 		// timeout during connection establishing
@@ -206,13 +206,13 @@ static void timeout_handler(void *data) {
 
 		// timeout during ping
 		if(c->status.pinged) {
-			logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)now.tv_sec - c->last_ping_time);
+			logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)now.tv_sec - c->last_ping_time.tv_sec);
 			terminate_connection(c, c->edge);
 			continue;
 		}
 
 		// check whether we need to send a new ping
-		if(c->last_ping_time + pinginterval <= now.tv_sec)
+		if(c->last_ping_time.tv_sec + pinginterval <= now.tv_sec)
 			send_ping(c);
 	}
 
