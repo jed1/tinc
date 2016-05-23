@@ -105,7 +105,9 @@ bool send_ping(connection_t *c) {
 
 bool ping_h(connection_t *c, const char *request) {
 	int tv_sec, tv_usec, ret;
-
+	// Since we have got PING from them - the connection is alive
+	c->last_ping_time = now;
+	// Answer the ping
 	ret = sscanf(request, "%*d %d %d", &tv_sec, &tv_usec);
 	if (ret == 2) {
 		return send_pong_v2(c, tv_sec, tv_usec);
