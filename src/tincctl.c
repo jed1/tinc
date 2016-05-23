@@ -717,6 +717,13 @@ bool connect_tincd(bool verbose) {
 	}
 
 	fclose(f);
+	if ((pid == 0) || (kill(pid, 0) && (errno == ESRCH))) {
+		fprintf(stderr, "Could not find tincd running at pid %d\n", pid);
+		/* clean up the stale socket and pid file */
+		unlink(pidfilename);
+		unlink(unixsocketname);
+		return false;
+	}
 
 #ifndef HAVE_MINGW
 	struct sockaddr_un sa;
@@ -1390,7 +1397,7 @@ static int cmd_pid(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if(!connect_tincd(true) && !pid)
+	if(!connect_tincd(true) || !pid)
 		return 1;
 
 	printf("%d\n", pid);
