@@ -128,8 +128,9 @@ static void sptps_logger(sptps_t *s, int s_errno, const char *format, va_list ap
 			message[--len] = 0;
 
 		len += snprintf(message + len, sizeof message - len,
-										" [init:%d udp:%d state:%d instate:%d outstate:%d inseqno:%d outseqno:%d] ", s->initiator, s->datagram,
-										s->state, s->instate, s->outstate, s->inseqno, s->outseqno);
+										" [init:%d udp:%d state:%d instate:%d outstate:%d inseqno:%d outseqno:%d farfuture:%d] ", s->initiator, s->datagram,
+										s->state, s->instate, s->outstate, s->inseqno, s->outseqno,
+										s->farfuture);
 
 		// WARNING: s->handle can point to a connection_t or a node_t,
 		// but both types have the name and hostname fields at the same offsets.

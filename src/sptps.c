@@ -512,8 +512,12 @@ static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len
 		return receive_handshake(s, data, len);
 	}
 
-	// Decrypt
+	if(!sptps_check_seqno(s, seqno, true)) {
+		warning(s, "%s@%d: %x/%x\n", __FUNCTION__, __LINE__, s->state, s->outstate);
+		return false;
+	}
 
+	// Decrypt
 	char buffer[len];
 	memset(buffer, 0x00, len);
 	size_t outlen;
@@ -521,10 +525,6 @@ static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len
 	if(!chacha_poly1305_decrypt(s->incipher, seqno, data, len, buffer, &outlen))
 		return error(s, EIO, "Failed to decrypt and verify packet");
 
-	if(!sptps_check_seqno(s, seqno, true)) {
-		warning(s, "%s@%d: %x/%x\n", __FUNCTION__, __LINE__, s->state, s->outstate);
-		return false;
-	}
 
 	// Append a NULL byte for safety.
 	buffer[outlen] = 0;
