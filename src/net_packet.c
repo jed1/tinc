@@ -1436,15 +1436,20 @@ static void handle_incoming_vpn_packet(listen_socket_t *ls, vpn_packet_t *pkt, s
 		if(from && !memcmp(DSTID(pkt), &nullid, sizeof nullid) && from->status.sptps) {
 			if(sptps_verify_datagram(&from->sptps, DATA(pkt), pkt->len - 2 * sizeof(node_id_t)))
 				n = from;
-			else
+#ifndef DISABLE_LEGACY
+			else {
 				goto skip_harder;
+			}
+#endif
 		}
 	}
 
+#ifndef DISABLE_LEGACY
 	if(!n) {
 		pkt->offset = 0;
 		n = try_harder(addr, pkt);
 	}
+#endif
 
 skip_harder:
 	if(!n) {
