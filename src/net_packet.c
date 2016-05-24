@@ -1398,7 +1398,9 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 		}
 
 		if(!try_mac(n, pkt)) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "try_mac(): for %s failed - previous log messages may be misleading", n->name);
+			char *hostname = sockaddr2hostname(from);
+			logger(DEBUG_ALWAYS, LOG_ERR, "try_mac(): from %s for %s failed - previous log messages may be misleading", hostname, n->name);
+			free(hostname);
 			continue;
 		}
 
