@@ -32,6 +32,7 @@
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
+#include "slpd.h"
 #include "utils.h"
 #include "xalloc.h"
 

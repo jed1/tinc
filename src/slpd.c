@@ -24,7 +24,8 @@ char *my_slpd_group;
 int my_slpd_expire;
 int slpdinterval = 0;
 
-extern char *myname;
+//extern char *myname;
+timeout_t slpdupdate_timeout;
 
 void periodic_slpd_handler(void) {
 	// expire SLPD addresses
@@ -38,6 +39,20 @@ void periodic_slpd_handler(void) {
 				n->slpd_address = NULL;
 			}
 		}
+}
+
+
+void slpdupdate_handler(void *data) {
+	config_t *c_iface;
+	c_iface = lookup_config(config_tree, "SLPDInterface");
+
+	while(c_iface) {
+		logger(DEBUG_STATUS, LOG_NOTICE, "Sending SLPD out on %s", c_iface->value);
+		send_slpd_broadcast(myself, c_iface->value);
+		c_iface = lookup_config_next(config_tree, c_iface);
+	}
+
+	timeout_set(data, &(struct timeval){slpdinterval + (rand() % 10), rand() % 100000});
 }
 
 void setup_slpd(void) {

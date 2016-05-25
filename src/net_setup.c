@@ -315,20 +315,6 @@ static bool read_rsa_private_key(void) {
 static timeout_t keyexpire_timeout;
 static timeout_t edgeupdate_timeout;
 /* Local Peer Discovery */
-static timeout_t slpdupdate_timeout;
-
-static void slpdupdate_handler(void *data) {
-	config_t *c_iface;
-	c_iface = lookup_config(config_tree, "SLPDInterface");
-
-	while(c_iface) {
-		logger(DEBUG_STATUS, LOG_NOTICE, "Sending SLPD out on %s", c_iface->value);
-		send_slpd_broadcast(myself, c_iface->value);
-		c_iface = lookup_config_next(config_tree, c_iface);
-	}
-
-	timeout_set(data, &(struct timeval){slpdinterval + (rand() % 10), rand() % 100000});
-}
 
 static void keyexpire_handler(void *data) {
 	regenerate_key();
