@@ -477,7 +477,6 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 	memcpy(&seqno, data, 4);
 	seqno = ntohl(seqno);
 	if (!sptps_check_seqno(s, seqno, false)) {
-		warning(s, "%s@%d: %x/%x\n", __FUNCTION__, __LINE__, s->state, s->outstate);
 		return false;
 	}
 
