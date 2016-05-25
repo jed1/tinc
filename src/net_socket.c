@@ -605,12 +605,15 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
 		}
 	}
 
+	if (!outgoing->config_tree) {
+		init_configuration(&outgoing->config_tree);
+		read_host_config(outgoing->config_tree, outgoing->name);
+	}
+
 	// Prefer the address discovered via SLPD
 	if (slpdinterval && n->slpd_address)
 		outgoing->cfg = n->slpd_address;
-	else if (!outgoing->config_tree) {
-		init_configuration(&outgoing->config_tree);
-		read_host_config(outgoing->config_tree, outgoing->name);
+	else {
 		char *address, *port;
 
 		if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port))
