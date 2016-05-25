@@ -442,7 +442,7 @@ static void handle_meta_io(void *data, int flags) {
 }
 
 bool do_outgoing_connection(outgoing_t *outgoing) {
-	char *address, *port, *space;
+	char *address;
 	struct addrinfo *proxyai = NULL;
 	int result;
 
@@ -454,21 +454,12 @@ begin:
 			return false;
 		}
 
-		get_config_string(outgoing->cfg, &address);
-
-		space = strchr(address, ' ');
-		if(space) {
-			port = xstrdup(space + 1);
-			*space = 0;
-		} else {
-			if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port))
-				port = xstrdup("655");
+		if (!get_config_string(outgoing->cfg, &address)) {
+			logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not set up a meta connection to %s - address not found", outgoing->name);
+			return false;
 		}
 
-		outgoing->ai = str2addrinfo(address, port, SOCK_STREAM);
-		free(address);
-		free(port);
-
+		outgoing->ai = config_address2addrinfo(address, SOCK_STREAM);
 		outgoing->aip = outgoing->ai;
 		outgoing->cfg = lookup_config_next(outgoing->config_tree, outgoing->cfg);
 	}
@@ -613,14 +604,33 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
 		}
 	}
 
-	if (!outgoing->config_tree) {
+	// Prefer the address discovered via SLPD
+	if (slpdinterval && n->slpd_address)
+		outgoing->cfg = n->slpd_address;
+	else if (!outgoing->config_tree) {
 		init_configuration(&outgoing->config_tree);
 		read_host_config(outgoing->config_tree, outgoing->name);
-		outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
-	}
+		char *address, *port;
 
-	if (slpdinterval && !outgoing->cfg && n->slpd_address)
-		outgoing->cfg = n->slpd_address;
+		if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port))
+			port = xstrdup("655");
+
+		if(get_config_string(lookup_config(outgoing->config_tree, "Address"), &address)) {
+			char fullhost[MAXSIZE] = { 0 };
+			config_t *cfg = new_config();
+
+			if (!strchr(address, ' ')) {
+				snprintf(fullhost, MAXSIZE-1, "%s %s", address, port);
+				cfg->value = xstrdup(fullhost);
+			} else
+				cfg->value = xstrdup(address);
+
+			cfg->variable = xstrdup("Address");
+			cfg->file = NULL;
+			cfg->line = -1;
+			outgoing->cfg = cfg;
+		}
+	}
 
 	if(!outgoing->cfg) {
 		if(n)
