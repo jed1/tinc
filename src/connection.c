@@ -27,7 +27,11 @@
 #include "control_common.h"
 #include "list.h"
 #include "logger.h"
+
+#ifndef DISABLE_LEGACY
 #include "rsa.h"
+#endif
+
 #include "subnet.h"
 #include "utils.h"
 #include "xalloc.h"
