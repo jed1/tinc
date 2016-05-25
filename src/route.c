@@ -115,12 +115,15 @@ static void swap_mac_addresses(vpn_packet_t *packet) {
 /* RFC 792 */
 
 static void route_ipv4_unreachable(node_t *source, vpn_packet_t *packet, length_t ether_size, uint8_t type, uint8_t code) {
-	struct ip ip = {0};
-	struct icmp icmp = {0};
+	struct ip ip;
+	struct icmp icmp;
 
 	struct in_addr ip_src;
 	struct in_addr ip_dst;
 	uint32_t oldlen;
+
+	memset(&ip, 0x00, sizeof(struct ip));
+	memset(&icmp, 0x00, sizeof(struct icmp));
 
 	if(ratelimit(3))
 		return;
@@ -210,7 +213,7 @@ static void route_ipv4_unreachable(node_t *source, vpn_packet_t *packet, length_
 
 static void route_ipv6_unreachable(node_t *source, vpn_packet_t *packet, length_t ether_size, uint8_t type, uint8_t code) {
 	struct ip6_hdr ip6;
-	struct icmp6_hdr icmp6 = {0};
+	struct icmp6_hdr icmp6;
 	uint16_t checksum;
 
 	struct {
@@ -219,6 +222,8 @@ static void route_ipv6_unreachable(node_t *source, vpn_packet_t *packet, length_
 		uint32_t length;
 		uint32_t next;
 	} pseudo;
+
+	memset(&icmp6, 0x00, sizeof(struct icmp6_hdr));
 
 	if(ratelimit(3))
 		return;
