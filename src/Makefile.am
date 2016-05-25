@@ -87,6 +87,7 @@ tincd_SOURCES = \
 	rsa.h \
 	rsagen.h \
 	script.c script.h \
+	slpd.c slpd.h \
 	splay_tree.c splay_tree.h \
 	sptps.c sptps.h \
 	subnet.c subnet.h \

@@ -33,6 +33,7 @@
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
+#include "slpd.h"
 #include "subnet.h"
 #include "xalloc.h"
 
@@ -250,7 +251,6 @@ static void periodic_handler(void *data) {
 				nc++;
 		}
 
-
 		if(nc < 3) {
 			/* Not enough active connections, try to add one.
 			   Choose a random node, if we don't have a connection to it,
@@ -343,6 +343,9 @@ static void periodic_handler(void *data) {
 			}
 		}
 	}
+
+	// call SLPD periodic handler
+	periodic_slpd_handler();
 
 end:
 	timeout_set(data, &(struct timeval){5, rand() % 100000});

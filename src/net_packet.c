@@ -44,6 +44,7 @@
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
+#include "slpd.h"
 #include "route.h"
 #include "utils.h"
 #include "xalloc.h"
@@ -72,7 +73,6 @@ bool udp_discovery = true;
 int udp_discovery_keepalive_interval = 10;
 int udp_discovery_interval = 2;
 int udp_discovery_timeout = 30;
-extern int my_slpd_expire;
 
 #define MAX_SEQNO 1073741824
 
@@ -1525,89 +1525,6 @@ skip_harder:
 		send_mtu_info(myself, n, MTU);
 }
 
-static void handle_incoming_slpd_packet(listen_socket_t *ls, void *pkt, struct sockaddr_in6 *addr, size_t datalen) {
-
-	int mav, miv, port;
-	char nodename[MAXSIZE], fng[MAXSIZE];
-
-	char addrstr[INET6_ADDRSTRLEN];
-	inet_ntop(AF_INET6, &addr->sin6_addr, addrstr, sizeof(addrstr));
-
-	int i = sscanf(pkt, "sLPD %d %d %s %d %86s", &mav, &miv, &nodename[0], &port, &fng[0]);
-	if (i != 5) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "cant not parse packet... %d from %s", i, addrstr);
-		return;
-	}
-
-	fng[86] = '\00';
-
-	if (mav == 0 && miv <= 2) {
-		logger(DEBUG_TRAFFIC, LOG_ERR, "Got SLPD packet node:%s port:%d %d.%d <%s> from %s", nodename, port, mav, miv, fng, addrstr);
-
-		node_t *n = lookup_node(nodename);
-		if (!n) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "unknown node: %s", nodename);
-			return;
-		}
-
-		if (n->slpd_address != NULL) {
-			if (now.tv_sec - n->slpd_active_since.tv_sec < my_slpd_expire) {
-				return;
-			}	else {
-				logger(DEBUG_STATUS, LOG_INFO, "Expire SLPD for %s", n->name);
-				free_config(n->slpd_address);
-				n->slpd_address = NULL;
-			}
-		}
-
-		if (!n->ecdsa)
-			node_read_ecdsa_public_key(n);
-
-		char sig[64];
-		memset(&sig, 0x0, 64);
-
-		if (miv >= 2) {
-			if (b64decode(fng, &sig, 86) != 64) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "b64decode() failed!");
-				return;
-			}
-
-			if (!ecdsa_verify(n->ecdsa, pkt, datalen-86-1, sig)) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Signature verification for SLPD from <%s> failed!", addrstr);
-				return;
-			}
-		}
-
-		if (!strncmp(n->name, myself->name, strlen(myself->name))) {
-			logger(DEBUG_SCARY_THINGS, LOG_NOTICE, "Ignore SLPD for myself: %s", nodename);
-			return;
-		}
-
-		config_t *cfg = NULL;
-
-		if (!n->slpd_address) {
-			char iface_name[255] = { 0 };
-			char fullhost[255] = { 0 };
-
-			if_indextoname(addr->sin6_scope_id, iface_name);
-
-			cfg = new_config();
-			cfg->variable = xstrdup("Address");
-			snprintf(fullhost, 254, "%s%%%s %d", addrstr, iface_name, port);
-			cfg->value = xstrdup(fullhost);
-			cfg->file = NULL;
-			cfg->line = -1;
-
-			logger(DEBUG_ALWAYS, LOG_ERR, "Discovered %s on %s", nodename , fullhost);
-			n->slpd_address = cfg;
-			n->slpd_active_since = now;
-			n->status.has_address = true;
-		}
-	} else {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got SLPD packet with wrong version %d.%d", mav, miv);
-	}
-	return;
-}
 
 void handle_incoming_vpn_data(void *data, int flags) {
 	listen_socket_t *ls = data;
