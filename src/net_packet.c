@@ -1401,12 +1401,8 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 			hard = true;
 		}
 
-		if(!try_mac(n, pkt)) {
-			char *hostname = sockaddr2hostname(from);
-			logger(DEBUG_ALWAYS, LOG_ERR, "try_mac(): from %s for %s failed - previous log messages may be misleading", hostname, n->name);
-			free(hostname);
+		if(!try_mac(n, pkt))
 			continue;
-		}
 
 		match = n;
 		break;
