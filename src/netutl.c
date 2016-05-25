@@ -54,6 +54,25 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 	return ai;
 }
 
+/*
+  Turn a configuration Address string into addrinfo.
+*/
+struct addrinfo *config_address2addrinfo(char *address, int socktype) {
+	struct addrinfo *ai;
+	char *space, *port;
+	space = strchr(address, ' ');
+	if(space) {
+		port = xstrdup(space + 1);
+		*space = 0;
+	} else
+			port = xstrdup("655");
+
+	ai = str2addrinfo(address, port, socktype);
+	free(port);
+
+	return ai;
+}
+
 sockaddr_t str2sockaddr(const char *address, const char *port) {
 	struct addrinfo *ai, hint;
 	sockaddr_t result;
