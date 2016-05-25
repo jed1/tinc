@@ -1430,7 +1430,7 @@ static void handle_incoming_vpn_packet(listen_socket_t *ls, vpn_packet_t *pkt, s
 		n = NULL; // Don't believe it if we don't have confirmation yet.
 
 	if(!n) {
-		// It might be from a 1.1 node, which might have a source ID in the packet.
+		// It might be from a 1.1 node, which have a source ID in the packet.
 		pkt->offset = 2 * sizeof(node_id_t);
 		from = lookup_node_id(SRCID(pkt));
 		if(from && !memcmp(DSTID(pkt), &nullid, sizeof nullid) && from->status.sptps) {
