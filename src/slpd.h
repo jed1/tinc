@@ -25,5 +25,7 @@
 #include "xalloc.h"
 
 void periodic_slpd_handler(void);
+void setup_slpd(void);
 int setup_slpd_in_socket(void);
 void handle_incoming_slpd_packet(listen_socket_t *, void *, struct sockaddr_in6 *, size_t);
+void send_slpd_broadcast(node_t *, char *);

@@ -60,7 +60,6 @@
 
 int keylifetime = 0;
 int edgeupdateinterval = 0;
-int slpdinterval = 0;
 #ifdef HAVE_LZO
 static char lzo_wrkmem[LZO1X_999_MEM_COMPRESS > LZO1X_1_MEM_COMPRESS ? LZO1X_999_MEM_COMPRESS : LZO1X_1_MEM_COMPRESS];
 #endif
@@ -1591,25 +1590,6 @@ void handle_incoming_vpn_data(void *data, int flags) {
 	handle_incoming_vpn_packet(ls, &pkt, &addr);
 #endif
 }
-
-void handle_incoming_slpd_data(void *data, int flags) {
-	listen_socket_t *ls = data;
-
-	char pkt[MAXSIZE];
-	struct sockaddr_in6 addr;
-	socklen_t addrlen = sizeof(addr);
-
-	size_t len = recvfrom(ls->udp.fd, pkt, MAXSIZE, 0, (struct sockaddr *)&addr, &addrlen);
-
-	if(len <= 0 || len > MAXSIZE) {
-		if(!sockwouldblock(sockerrno))
-			logger(DEBUG_ALWAYS, LOG_ERR, "Receiving SLPD packet failed: %s", sockstrerror(sockerrno));
-		return;
-	}
-
-	handle_incoming_slpd_packet(ls, &pkt, &addr, len);
-}
-
 
 void handle_device_data(void *data, int flags) {
 	vpn_packet_t packet;

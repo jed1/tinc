@@ -39,6 +39,7 @@
 #include "route.h"
 #include "rsa.h"
 #include "script.h"
+#include "slpd.h"
 #include "splay_tree.h"
 #include "subnet.h"
 #include "utils.h"
@@ -49,9 +50,6 @@
 #endif
 
 char *myport;
-char *my_slpd_port;
-char *my_slpd_group;
-int my_slpd_expire;
 static char *myname;
 static io_t device_io;
 devops_t devops;
@@ -325,7 +323,7 @@ static void slpdupdate_handler(void *data) {
 
 	while(c_iface) {
 		logger(DEBUG_STATUS, LOG_NOTICE, "Sending SLPD out on %s", c_iface->value);
-		send_slpd_broadcast(c_iface->value);
+		send_slpd_broadcast(myself, c_iface->value);
 		c_iface = lookup_config_next(config_tree, c_iface);
 	}
 
@@ -340,105 +338,6 @@ static void keyexpire_handler(void *data) {
 static void edgeupdate_handler(void *data) {
 	update_edge_weight();
 	timeout_set(data, &(struct timeval){edgeupdateinterval + (rand() % 10), rand() % 100000});
-}
-
-void send_slpd_broadcast(char *iface) {
-	int sd;
-	struct addrinfo *mcast_addr;
-	struct addrinfo hints;
-	sockaddr_t r;
-
-	char slpd_msg[MAXSIZE] = "";
-
-	/* Check if interface is up */
-	struct ifreq ifr;
-	sd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
-	memset(&ifr, 0, sizeof(ifr));
-	strcpy(ifr.ifr_name, iface);
-	if (ioctl(sd, SIOCGIFFLAGS, &ifr) < 0) {
-		logger(DEBUG_ALWAYS, LOG_INFO, "ioctl() on %s error: [%s:%d]", iface, strerror(errno), errno);
-	}
-	close(sd);
-	// Requested interface is down
-	if (!(ifr.ifr_flags & IFF_UP) || !(ifr.ifr_flags & IFF_RUNNING))
-		return;
-
-	bzero(&hints, sizeof(hints));
-	hints.ai_family   = AF_INET6;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_flags = AI_ADDRCONFIG | AI_CANONNAME;
-
-	int status;
-	if ((status = getaddrinfo(my_slpd_group, my_slpd_port, &hints, &mcast_addr)) != 0 ) {
-		logger(DEBUG_ALWAYS, LOG_INFO, "getaddrinfo() error: [%s:%d]", strerror(errno), errno);
-		return;
-	}
-
-	if ((sd = socket(mcast_addr->ai_family, mcast_addr->ai_socktype, 0)) < 0 ) {
-		logger(DEBUG_ALWAYS, LOG_INFO, "socket() error: [%s:%d]", strerror(errno), errno);
-		freeaddrinfo(mcast_addr);
-		return;
-	}
-
-	int on = 1;
-	if (setsockopt(sd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on)) < 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "setsockopt() IPV6_V6ONLY failed [%s:%d]", strerror(errno), errno);
-		return;
-	}
-
-	/* Send SLPD only on this Interface */
-
-	unsigned int ifindex;
-	ifindex = if_nametoindex(iface);
-	if(setsockopt (sd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)) != 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "setsockopt() IPV6_MULTICAST_IF failed [%s:%d]", strerror(errno), errno);
-		freeaddrinfo(mcast_addr);
-		return;
-	}
-
-	unsigned int reuse = 1;
-	if(setsockopt (sd, IPPROTO_IPV6, SO_REUSEADDR, (char*)&reuse, sizeof(reuse)) != 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "setsockopt() SO_REUSEADDR failed: [%s:%d]", strerror(errno), errno);
-		freeaddrinfo(mcast_addr);
-		return;
-	}
-
-	snprintf(slpd_msg, MAXSIZE, "sLPD 0 2 %s %d", myname, atoi(myport));
-
-	char signature[87];
-	char b64sig[255];
-	char pkt[MAXSIZE];
-
-	if (!node_read_ecdsa_public_key(myself)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Can not load public key for SLPD");
-		return;
-	}
-
-	if (!read_ecdsa_private_key()) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Can not load private key for SLPD");
-		return;
-	}
-	slpd_msg[MAXSIZE-1] = '\00';
-
-	if (!ecdsa_sign(myself->connection->ecdsa, slpd_msg, strlen(slpd_msg), &signature)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Can not sign payload for SLPD");
-		return;
-	}
-
-	if (b64encode(signature, b64sig, 64) != 86) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "b64encode() failed!");
-		return;
-	}
-
-	int l = snprintf(pkt, strlen(slpd_msg) + strlen(b64sig) + 2, "%s %s", slpd_msg, b64sig);
-	pkt[l] = '\00';
-
-	if (sendto(sd, pkt, strlen(pkt), 0, mcast_addr->ai_addr, mcast_addr->ai_addrlen) != strlen(pkt) ) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "SLPD send() error: [%s:%d]", strerror(errno), errno);
-	}
-
-	close(sd);
-	return;
 }
 
 void regenerate_key(void) {
@@ -923,17 +822,7 @@ static bool setup_myself(void) {
 	else
 		port_specified = true;
 
-	if(!get_config_string(lookup_config(config_tree, "SLPDPort"), &my_slpd_port))
-		my_slpd_port = xstrdup(DEFAULT_SLPD_PORT);
-
-	if(!get_config_string(lookup_config(config_tree, "SLPDGroup"), &my_slpd_group))
-		my_slpd_group = xstrdup(DEFAULT_SLPD_GROUP);
-
-	char *tmp_expire;
-	if(!get_config_string(lookup_config(config_tree, "SLPDExpire"), &tmp_expire))
-		my_slpd_expire = DEFAULT_SLPD_EXPIRE;
-	else
-		my_slpd_expire = atoi(tmp_expire);
+	setup_slpd();
 
 	myself->connection->options = 0;
 	myself->connection->protocol_major = PROT_MAJOR;
