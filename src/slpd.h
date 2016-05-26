@@ -24,6 +24,10 @@
 #include "utils.h"
 #include "xalloc.h"
 
+#define DEFAULT_SLPD_GROUP    "ff02::42:1"
+#define DEFAULT_SLPD_PORT     "1655"
+#define DEFAULT_SLPD_EXPIRE   300
+
 extern int slpdinterval;
 extern timeout_t slpdupdate_timeout;
 
