@@ -605,21 +605,17 @@ static void choose_local_address(const node_t *n, const sockaddr_t **sa, int *so
 	edge_t *candidate = NULL;
 
 
-	if (!n->slpd_address) {
-		for splay_each(edge_t, e, n->edge_tree) {
-				if(i++ == j) {
-					candidate = e;
-					break;
-				}
+	for splay_each(edge_t, e, n->edge_tree) {
+			if(i++ == j) {
+				candidate = e;
+				break;
 			}
-
-		if (candidate && candidate->local_address.sa.sa_family) {
-			*sa = &candidate->local_address;
-			*sock = rand() % listen_sockets;
-			adapt_socket(*sa, sock);
 		}
-	} else {
-		//*sa = str2sockaddr
+
+	if (candidate && candidate->local_address.sa.sa_family) {
+		*sa = &candidate->local_address;
+		*sock = rand() % listen_sockets;
+		adapt_socket(*sa, sock);
 	}
 }
 
