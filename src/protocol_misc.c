@@ -100,7 +100,7 @@ bool send_ping(connection_t *c) {
 	c->status.pinged = true;
 	c->last_ping_time = now;
 
-	return send_request(c, "%d %zu %ld", PING, c->last_ping_time.tv_sec, c->last_ping_time.tv_usec);
+	return send_request(c, "%d %lf %ld", PING, difftime(c->last_ping_time.tv_sec,0), c->last_ping_time.tv_usec);
 }
 
 bool ping_h(connection_t *c, const char *request) {
