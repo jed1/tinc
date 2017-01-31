@@ -160,7 +160,7 @@ dnl   AX_CHECK_COMPILE_FLAG([-fno-strict-overflow], [CPPFLAGS="$CPPFLAGS -fno-st
 dnl   AX_CHECK_COMPILE_FLAG([-Werror=shorten-64-to-32], [CFLAGS="$CFLAGS -Werror=shorten-64-to-32"])
    AX_CHECK_COMPILE_FLAG([-Wno-format-nonliteral], [CFLAGS="$CFLAGS -Wno-format-nonliteral"])
 dnl   AX_CHECK_COMPILE_FLAG([-Wno-conversion], [CFLAGS="$CFLAGS -Wno-conversion"])
-   AX_CHECK_COMPILE_FLAG([-Werror=format], [CFLAGS="$CFLAGS -Werror=format"])
+dnl   AX_CHECK_COMPILE_FLAG([-Werror=format], [CFLAGS="$CFLAGS -Werror=format"])
    AX_CHECK_COMPILE_FLAG([-Wno-date-time], [CFLAGS="$CFLAGS -Wno-date-time"])
    AX_CHECK_COMPILE_FLAG([-Wno-shadow], [CFLAGS="$CFLAGS -Wno-shadow"])
    AX_CHECK_COMPILE_FLAG([-Wno-vla], [CFLAGS="$CFLAGS -Wno-vla"])
