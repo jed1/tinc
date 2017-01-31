@@ -135,68 +135,55 @@ bool add_edge_h(connection_t *c, const char *request) {
 	e = lookup_edge(from, to);
 
 	if(e) {
-		if(e->weight != weight || e->options != options || sockaddrcmp(&e->address, &address)) {
-			if(from == myself) {
-				logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
-						   "ADD_EDGE", c->name, c->hostname);
-				send_add_edge(c, e);
-				sockaddrfree(&local_address);
-				return true;
-			} else {
-				/* Update weight first */
-				if(e->weight != weight){
-					logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) with new weight %s -> %s %d -> %d",
-								 "ADD_EDGE", c->name, c->hostname, e->from->name, e->to->name, e->weight, weight);
-					edge_update_weigth(e, weight);
-				}
-				if (e->options != options) {
-					logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) with new options %s -> %s %x -> %x",
-								 "ADD_EDGE", c->name, c->hostname, e->from->name, e->to->name, e->options, options);
-					e->options = options;
-				}
-				if (sockaddrcmp(&e->address, &address)) {
-					logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) with new address %s -> %s",
-								 "ADD_EDGE", c->name, c->hostname, e->from->name, e->to->name);
-					e->address = address;
-				}
-				goto done;
-			}
-		} else if(sockaddrcmp(&e->local_address, &local_address)) {
-			if(from == myself) {
-				if(e->local_address.sa.sa_family && local_address.sa.sa_family) {
-					// Someone has the wrong local address for ourself. Correct then.
-					logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
-							   "ADD_EDGE", c->name, c->hostname);
-					send_add_edge(c, e);
-					sockaddrfree(&local_address);
-					return true;
-				}
-				// Otherwise, just ignore it.
-				sockaddrfree(&local_address);
-				return true;
-			} else if(local_address.sa.sa_family && local_address.sa.sa_family != AF_UNKNOWN) {
-				// We learned a new local address for this edge.
-				// local_address.sa.sa_family will be 0 if we got it from older tinc versions
-				// local_address.sa.sa_family will be 255 (AF_UNKNOWN) if we got it from newer versions
-				// but for edge which does not have local_address
-				sockaddrfree(&e->local_address);
-				e->local_address = local_address;
+		bool new_address = sockaddrcmp(&e->address, &address);
+		// local_address.sa.sa_family will be 0 if we got it from older tinc versions
+		// local_address.sa.sa_family will be 255 (AF_UNKNOWN) if we got it from newer versions
+		// but for edge which does not have local_address
+		bool new_local_address = local_address.sa.sa_family && local_address.sa.sa_family != AF_UNKNOWN &&
+			sockaddrcmp(&e->local_address, &local_address);
 
-				// Tell others about it.
-				if(!tunnelserver)
-					forward_request(c, request);
-
-				return true;
-			} else {
-				logger(DEBUG_PROTOCOL, LOG_WARNING, "%s:%d %s -> %s - got edge we know from older version? (%d.%d)",
-							 __FUNCTION__, __LINE__, e->from->name, e->to->name, c->protocol_major, c->protocol_minor);
-				sockaddrfree(&local_address);
-				return true;
-			}
-		} else {
-
+		if(e->weight == weight && e->options == options && !new_address && !new_local_address) {
+			sockaddrfree(&address);
 			sockaddrfree(&local_address);
 			return true;
+		}
+
+		if(from == myself) {
+			logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
+					   "ADD_EDGE", c->name, c->hostname);
+			send_add_edge(c, e);
+			sockaddrfree(&address);
+			sockaddrfree(&local_address);
+			return true;
+		}
+
+		logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) which does not match existing entry",
+				   "ADD_EDGE", c->name, c->hostname);
+
+		if (e->options != options) {
+			logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) with new options %s -> %s %x -> %x",
+						 "ADD_EDGE", c->name, c->hostname, e->from->name, e->to->name, e->options, options);
+			e->options = options;
+		}
+
+		if(new_address) {
+			sockaddrfree(&e->address);
+			e->address = address;
+		} else {
+			sockaddrfree(&address);
+		}
+
+		if(new_local_address) {
+			sockaddrfree(&e->local_address);
+			e->local_address = local_address;
+		} else {
+			sockaddrfree(&local_address);
+		}
+
+		if(e->weight != weight) {
+			logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) with new weight %s -> %s %d -> %d",
+						 "ADD_EDGE", c->name, c->hostname, e->from->name, e->to->name, e->weight, weight);
+			edge_update_weigth(e, weight);
 		}
 	} else if(from == myself) {
 		logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not exist",
@@ -207,21 +194,20 @@ bool add_edge_h(connection_t *c, const char *request) {
 		e->to = to;
 		send_del_edge(c, e);
 		free_edge(e);
+		sockaddrfree(&address);
 		sockaddrfree(&local_address);
 		return true;
+	} else {
+		e = new_edge();
+		e->from = from;
+		e->to = to;
+		e->address = address;
+		e->local_address = local_address;
+		e->options = options;
+		e->weight = weight;
+		edge_add(e);
 	}
 
-	e = new_edge();
-	e->from = from;
-	e->to = to;
-	e->address = address;
-	e->local_address = local_address;
-	e->options = options;
-	e->weight = weight;
-	e->avg_rtt = weight/10;
-	edge_add(e);
-
-done:
 	/* Tell the rest about the new edge */
 	if(!tunnelserver)
 		forward_request(c, request);

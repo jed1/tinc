@@ -726,7 +726,7 @@ static bool add_listen_address(char *address, bool bindto) {
 
 		int udp_fd = setup_vpn_in_socket((sockaddr_t *) aip->ai_addr);
 
-		if(tcp_fd < 0) {
+		if(udp_fd < 0) {
 			close(tcp_fd);
 			continue;
 		}
@@ -909,7 +909,7 @@ static bool setup_myself(void) {
 	/* Generate packet encryption key */
 
 	if(!get_config_string(lookup_config(config_tree, "Cipher"), &cipher))
-		cipher = xstrdup("blowfish");
+		cipher = xstrdup("aes-256-cbc");
 
 	if(!strcasecmp(cipher, "none")) {
 		myself->incipher = NULL;
@@ -933,7 +933,7 @@ static bool setup_myself(void) {
 	}
 
 	if(!get_config_string(lookup_config(config_tree, "Digest"), &digest))
-		digest = xstrdup("sha1");
+		digest = xstrdup("sha256");
 
 	if(!strcasecmp(digest, "none")) {
 		myself->indigest = NULL;

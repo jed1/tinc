@@ -445,11 +445,13 @@ static bool rsa_keygen(int bits, bool ask) {
 	// Make sure the key size is a multiple of 8 bits.
 	bits &= ~0x7;
 
-	// Force them to be between 1024 and 8192 bits long.
-	if(bits < 1024)
-		bits = 1024;
-	if(bits > 8192)
-		bits = 8192;
+	// Make sure that a valid key size is used.
+	if(bits < 1024 || bits > 8192) {
+		fprintf(stderr, "Invalid key size %d specified! It should be between 1024 and 8192 bits.\n", bits);
+		return false;
+	} else if(bits < 2048) {
+		fprintf(stderr, "WARNING: generating a weak %d bits RSA key! 2048 or more bits are recommended.\n", bits);
+	}
 
 	fprintf(stderr, "Generating %d bits keys:\n", bits);
 
@@ -559,6 +561,7 @@ bool sendline(int fd, char *format, ...) {
 
 	va_start(ap, format);
 	blen = vsnprintf(buffer, sizeof buffer, format, ap);
+	buffer[sizeof buffer - 1] = 0;
 	va_end(ap);
 
 	if(blen < 1 || blen >= sizeof buffer)
@@ -884,7 +887,7 @@ static int cmd_start(int argc, char *argv[]) {
 
 	if(!pid) {
 		close(pfd[0]);
-		char buf[100] = "";
+		char buf[100];
 		snprintf(buf, sizeof buf, "%d", pfd[1]);
 		setenv("TINC_UMBILICAL", buf, true);
 		exit(execvp(c, nargv));
@@ -2538,6 +2541,7 @@ static int cmd_verify(int argc, char *argv[]) {
 	char *newline = memchr(data, '\n', len);
 	if(!newline || (newline - data > MAX_STRING_SIZE - 1)) {
 		fprintf(stderr, "Invalid input\n");
+		free(data);
 		return 1;
 	}
 
@@ -2550,11 +2554,13 @@ static int cmd_verify(int argc, char *argv[]) {
 
 	if(sscanf(data, "Signature = %s %ld %s", signer, &t, sig) != 3 || strlen(sig) != 86 || !t || !check_id(signer)) {
 		fprintf(stderr, "Invalid input\n");
+		free(data);
 		return 1;
 	}
 
 	if(node && strcmp(node, signer)) {
 		fprintf(stderr, "Signature is not made by %s\n", node);
+		free(data);
 		return 1;
 	}
 
@@ -2851,8 +2857,10 @@ static int cmd_shell(int argc, char *argv[]) {
 		if(nargc == argc)
 			continue;
 
-		if(!strcasecmp(nargv[argc], "exit") || !strcasecmp(nargv[argc], "quit"))
+		if(!strcasecmp(nargv[argc], "exit") || !strcasecmp(nargv[argc], "quit")) {
+			free(nargv);
 			return result;
+		}
 
 		bool found = false;
 
