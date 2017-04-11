@@ -442,13 +442,20 @@ static void handle_meta_io(void *data, int flags) {
 		handle_meta_connection_data(c);
 }
 
+static void free_known_addresses(struct addrinfo *ai) {
+	for(struct addrinfo *aip = ai, *next; aip; aip = next) {
+		next = aip->ai_next;
+		free(aip);
+	}
+}
+
 bool do_outgoing_connection(outgoing_t *outgoing) {
 	char *address;
 	struct addrinfo *proxyai = NULL;
 	int result;
 
 begin:
-	if(!outgoing->ai) {
+	if(!outgoing->ai && !outgoing->kai) {
 		if(!outgoing->cfg) {
 			logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not set up a meta connection to %s", outgoing->name);
 			retry_outgoing(outgoing);
@@ -469,6 +476,11 @@ begin:
 		if(outgoing->ai)
 			freeaddrinfo(outgoing->ai);
 		outgoing->ai = NULL;
+
+		if(outgoing->kai)
+			free_known_addresses(outgoing->kai);
+		outgoing->kai = NULL;
+
 		goto begin;
 	}
 
@@ -562,6 +574,7 @@ begin:
 // Find edges pointing to this node, and use them to build a list of unique, known addresses.
 static struct addrinfo *get_known_addresses(node_t *n) {
 	struct addrinfo *ai = NULL;
+	struct addrinfo *oai = NULL;
 
 	for splay_each(edge_t, e, n->edge_tree) {
 		if(!e->reverse)
@@ -577,16 +590,15 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 		if(found)
 			continue;
 
-		struct addrinfo *nai = xzalloc(sizeof *nai);
-		if(ai)
-			ai->ai_next = nai;
-		ai = nai;
+		oai = ai;
+		ai = xzalloc(sizeof *ai);
 		ai->ai_family = e->reverse->address.sa.sa_family;
 		ai->ai_socktype = SOCK_STREAM;
 		ai->ai_protocol = IPPROTO_TCP;
 		ai->ai_addrlen = SALEN(e->reverse->address.sa);
 		ai->ai_addr = xmalloc(ai->ai_addrlen);
 		memcpy(ai->ai_addr, &e->reverse->address, ai->ai_addrlen);
+		ai->ai_next = oai;
 	}
 
 	return ai;
@@ -640,8 +652,8 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
 
 	if(!outgoing->cfg) {
 		if(n)
-			outgoing->aip = outgoing->ai = get_known_addresses(n);
-		if(!outgoing->ai) {
+			outgoing->aip = outgoing->kai = get_known_addresses(n);
+		if(!outgoing->kai) {
 			logger(DEBUG_ALWAYS, LOG_DEBUG, "No address known for %s", outgoing->name);
 			goto remove;
 		}
@@ -797,6 +809,9 @@ static void free_outgoing(outgoing_t *outgoing) {
 
 	if(outgoing->ai)
 		freeaddrinfo(outgoing->ai);
+
+	if(outgoing->kai)
+		free_known_addresses(outgoing->kai);
 
 	if(outgoing->config_tree)
 		exit_configuration(&outgoing->config_tree);

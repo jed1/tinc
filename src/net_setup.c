@@ -1,7 +1,7 @@
 /*
     net_setup.c -- Setup.
     Copyright (C) 1998-2005 Ivo Timmermans,
-                  2000-2016 Guus Sliepen <guus@tinc-vpn.org>
+                  2000-2017 Guus Sliepen <guus@tinc-vpn.org>
                   2006      Scott Lamb <slamb@slamb.org>
                   2010      Brandon Black <blblack@gmail.com>
 
@@ -50,7 +50,6 @@
 #endif
 
 char *myport;
-static char *myname;
 static io_t device_io;
 devops_t devops;
 bool device_standby = false;
@@ -755,29 +754,17 @@ void device_enable(void) {
 
 	/* Run tinc-up script to further initialize the tap interface */
 
-	char *envp[5] = {NULL};
-	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-	xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
-	xasprintf(&envp[3], "NAME=%s", myname);
-
-	execute_script("tinc-up", envp);
-
-	for(int i = 0; i < 4; i++)
-		free(envp[i]);
+	environment_t env;
+	environment_init(&env);
+	execute_script("tinc-up", &env);
+	environment_exit(&env);
 }
 
 void device_disable(void) {
-	char *envp[5] = {NULL};
-	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-	xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
-	xasprintf(&envp[3], "NAME=%s", myname);
-
-	execute_script("tinc-down", envp);
-
-	for(int i = 0; i < 4; i++)
-		free(envp[i]);
+	environment_t env;
+	environment_init(&env);
+	execute_script("tinc-down", &env);
+	environment_exit(&env);
 
 	if (devops.disable)
 		devops.disable();
@@ -987,6 +974,8 @@ static bool setup_myself(void) {
 			devops = raw_socket_devops;
 		else if(!strcasecmp(type, "multicast"))
 			devops = multicast_devops;
+		else if(!strcasecmp(type, "fd"))
+			devops = fd_devops;
 #ifdef ENABLE_UML
 		else if(!strcasecmp(type, "uml"))
 			devops = uml_devops;
@@ -1217,7 +1206,6 @@ void close_network_connections(void) {
 
 	exit_control();
 
-	free(myname);
 	free(scriptextension);
 	free(scriptinterpreter);
 
