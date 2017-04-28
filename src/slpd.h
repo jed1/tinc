@@ -17,13 +17,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "system.h"
-
-#include "conf.h"
-#include "logger.h"
-#include "utils.h"
-#include "xalloc.h"
-
 #define DEFAULT_SLPD_GROUP    "ff02::42:1"
 #define DEFAULT_SLPD_PORT     "1655"
 #define DEFAULT_SLPD_EXPIRE   300
