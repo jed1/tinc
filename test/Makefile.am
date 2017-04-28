@@ -54,7 +54,7 @@ simple_LDFLAGS = -L$(top_srcdir)/src -lcmocka -lreadline -pthread -lgcrypt -lm \
 	../src/protocol_misc.o ../src/protocol.o ../src/protocol_subnet.o \
 	../src/raw_socket_device.o ../src/route.o ../src/script.o \
 	../src/slpd.o ../src/splay_tree.o ../src/sptps.o \
-	../src/subnet_cli.o ../src/subnet.o ../src/subnet_parse.o \
+	../src/subnet.o ../src/subnet_parse.o \
 	../src/utils.o ../src/version.o \
 	../src/linux/device.o \
 	../src/ed25519/add_scalar.o\
