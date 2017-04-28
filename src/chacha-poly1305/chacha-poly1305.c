@@ -13,7 +13,7 @@ struct chacha_poly1305_ctx {
 
 chacha_poly1305_ctx_t *chacha_poly1305_init(void)
 {
-	chacha_poly1305_ctx_t *ctx = xzalloc(sizeof *ctx);
+	chacha_poly1305_ctx_t *ctx = (chacha_poly1305_ctx_t *)xzalloc(sizeof *ctx);
 	return ctx;
 }
 
@@ -22,8 +22,11 @@ void chacha_poly1305_exit(chacha_poly1305_ctx_t *ctx)
 	free(ctx);
 }
 
-bool chacha_poly1305_set_key(chacha_poly1305_ctx_t *ctx, const void *key)
+bool chacha_poly1305_set_key(chacha_poly1305_ctx_t *ctx, const void *key, size_t keylen)
 {
+	if (keylen < CHACHA_POLY1305_KEYLEN)
+		return false;
+
 	chacha_keysetup(&ctx->main_ctx, key, 256);
 	chacha_keysetup(&ctx->header_ctx, key + 32, 256);
 	return true;

@@ -248,10 +248,10 @@ static bool receive_ack(sptps_t *s, const char *data, uint16_t len) {
 		return error(s, EIO, "Invalid ACK record length");
 
 	if(s->initiator) {
-		if(!chacha_poly1305_set_key(s->incipher, s->key))
+		if(!chacha_poly1305_set_key(s->incipher, s->key, 2 * CHACHA_POLY1305_KEYLEN))
 			return error(s, EINVAL, "Failed to set counter");
 	} else {
-		if(!chacha_poly1305_set_key(s->incipher, s->key + CHACHA_POLY1305_KEYLEN))
+		if(!chacha_poly1305_set_key(s->incipher, s->key + CHACHA_POLY1305_KEYLEN, 2 * CHACHA_POLY1305_KEYLEN))
 			return error(s, EINVAL, "Failed to set counter");
 	}
 
@@ -334,10 +334,10 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 
 	// TODO: only set new keys after ACK has been set/received
 	if(s->initiator) {
-		if(!chacha_poly1305_set_key(s->outcipher, s->key + CHACHA_POLY1305_KEYLEN))
+		if(!chacha_poly1305_set_key(s->outcipher, s->key + CHACHA_POLY1305_KEYLEN, 2 * CHACHA_POLY1305_KEYLEN))
 			return error(s, EINVAL, "Failed to set key");
 	} else {
-		if(!chacha_poly1305_set_key(s->outcipher, s->key))
+		if(!chacha_poly1305_set_key(s->outcipher, s->key, 2 * CHACHA_POLY1305_KEYLEN))
 			return error(s, EINVAL, "Failed to set key");
 	}
 
