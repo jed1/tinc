@@ -178,11 +178,11 @@ static void test_connection_graph(void **state) {
 
   assert_int_equal(receive_request(c1, "nope\n"), false);
   assert_int_equal(receive_request(c1, "0 nope 0.0\n"), false);
-  receive_request(c1, "0 node1 0.1\n0.0\r\n");
+  assert_int_equal(receive_request(c1, "0 node1 0.1\n0.0\r\n"), false);
 
-  receive_request(c1, "0  \n");
-  receive_request(c1, "0 nodäe1 1.17\n");
-  receive_request(c1, "0 node2 1.ä\n");
+  assert_int_equal(receive_request(c1, "0  \n"), false);
+  assert_int_equal(receive_request(c1, "0 nodäe1 1.17\n"), false);
+  assert_int_equal(receive_request(c1, "0 node2 1.ä\n"), false);
 
   // this will segfault cause cmdline_conf is NULL
   //receive_request(c1, "0 node2 17.7\n");
