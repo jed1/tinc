@@ -1,6 +1,6 @@
 /*
     simple.c -- cmocka simple unittest
-    Copyright (C) 2015 Rafal Lesniak
+    Copyright (C) 2015-2017 Rafal Lesniak
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@
 #include "hash.h"
 #include "node.h"
 #include "xalloc.h"
+#include "protocol.h"
 
 /*
    hash tests
@@ -130,6 +131,13 @@ static void test_connection_graph(void **state) {
 
   myself = new_node();
   myself->name = xstrdup("node1");
+  xasprintf(&myself->hostname, "MYSELF port %d", 31337);
+  myself->connection = new_connection();
+  myself->connection->options = 0;
+  myself->connection->protocol_major = PROT_MAJOR;
+  myself->connection->protocol_minor = PROT_MINOR;
+  myself->connection->outcompression = 0;
+  myself->connection->hostname = xstrdup(myself->hostname);
 
   n1 = new_node();
   n1->name = xstrdup("node2");
@@ -163,12 +171,21 @@ static void test_connection_graph(void **state) {
 
   graph();
 
-  edge_del(e2);
-  assert_null(e2);
   e2->weight = 10;
 
   edge_add(e2);
   graph();
+
+  assert_int_equal(receive_request(c1, "nope\n"), false);
+  assert_int_equal(receive_request(c1, "0 nope 0.0\n"), false);
+  receive_request(c1, "0 node1 0.1\n0.0\r\n");
+
+  receive_request(c1, "0  \n");
+  receive_request(c1, "0 nodäe1 1.17\n");
+  receive_request(c1, "0 node2 1.ä\n");
+
+  // this will segfault cause cmdline_conf is NULL
+  //receive_request(c1, "0 node2 17.7\n");
 
   connection_del(c1);
   exit_edges();
@@ -364,7 +381,7 @@ static void test_read_config_file(void **state) {
   char *priority = NULL;
   splay_tree_t *config_tree = *state;
 
-  read_config_file(config_tree, "./conf1");
+  read_config_file(config_tree, "./mocks/conf1");
 
   get_config_string(lookup_config(config_tree, "Ed25519PublicKey111111"), &priority);
   assert_null(priority);
@@ -419,7 +436,10 @@ static void test_config_add_item_no_filename(void **state) {
   config_add(config_tree, item);
 
   value = NULL;
-  get_config_string(lookup_config(config_tree, "testVar2"), &value);
+  item2 = lookup_config(config_tree, "testVar2");
+  assert_non_null(item2);
+
+  get_config_string(item2, &value);
   assert_non_null(value);
   if (!value) {
     item2 = NULL;
@@ -436,6 +456,7 @@ int main(void) {
     // connection tests
     cmocka_unit_test_setup_teardown(test_connection_init, connection_setup, connection_teardown),
     cmocka_unit_test_setup_teardown(test_connection_graph, connection_setup, connection_teardown),
+    // cmocka_unit_test_setup_teardown(test_protocol_first, connection_setup, connection_teardown),
     // node tests
     cmocka_unit_test_setup_teardown(test_node_init, node_setup, node_teardown),
     // edge tests
