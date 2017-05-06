@@ -351,6 +351,9 @@ bool send_mtu_info(node_t *from, node_t *to, int mtu) {
 	/* Skip cases where sending MTU info messages doesn't make sense.
 	   This is done here in order to avoid repeating the same logic in multiple callsites. */
 
+	if (mtu <= 0 || mtu > MTU)
+		return false;
+
 	if(to == myself)
 		return true;
 
