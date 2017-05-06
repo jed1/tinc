@@ -220,6 +220,8 @@ extern void regenerate_key(void);
 extern void update_edge_weight(void);
 extern void purge(void);
 extern void retry(void);
+extern void init_timers(void);
+extern void exit_timers(void);
 extern int reload_configuration(void);
 extern void load_all_nodes(void);
 extern void try_tx(struct node_t *n, bool);

@@ -512,12 +512,28 @@ void retry(void) {
 }
 
 /*
+	Initialize timers
+*/
+void init_timers(void) {
+	timeout_add(&pingtimer, timeout_handler, &pingtimer, &(struct timeval){pingtimeout, rand() % 100000});
+	timeout_add(&periodictimer, periodic_handler, &periodictimer, &(struct timeval){0, 0});
+}
+
+/*
+	Release timers
+*/
+
+void exit_timers(void) {
+	timeout_del(&periodictimer);
+	timeout_del(&pingtimer);
+}
+
+/*
   this is where it all happens...
 */
 int main_loop(void) {
 	last_periodic_run_time = now;
-	timeout_add(&pingtimer, timeout_handler, &pingtimer, &(struct timeval){pingtimeout, rand() % 100000});
-	timeout_add(&periodictimer, periodic_handler, &periodictimer, &(struct timeval){0, 0});
+	init_timers();
 
 #ifndef HAVE_MINGW
 	signal_t sighup;
@@ -552,8 +568,6 @@ int main_loop(void) {
 	signal_del(&sigalrm);
 #endif
 
-	timeout_del(&periodictimer);
-	timeout_del(&pingtimer);
-
+	exit_timers();
 	return 0;
 }
