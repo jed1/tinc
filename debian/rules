@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+%:
+	dh $@  --with autotools_dev
+
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-uml --enable-vde --with-systemdsystemunitdir=/lib/systemd/system
+
+override_dh_auto_install:
+	dh_auto_install -- install-html
+	# Remove info dir file
+	rm -f debian/tinc/usr/share/info/dir
+
+override_dh_installinit:
+	dh_installinit -R
+
+override_dh_systemd_start:
+	dh_systemd_start --restart-after-upgrade
